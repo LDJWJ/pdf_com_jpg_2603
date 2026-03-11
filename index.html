@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Tools</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- FileSaver.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Mobile Hamburger Menu Button -->
+        <button id="hamburgerBtn" class="hamburger-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <!-- Mobile Overlay -->
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h1>PDF Tools</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tool="converter">
+                    <span class="nav-icon">📷</span>
+                    <span class="nav-text">이미지 변환</span>
+                </button>
+                <button class="nav-item" data-tool="compressor">
+                    <span class="nav-icon">📦</span>
+                    <span class="nav-text">PDF 압축</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Image Converter Tool -->
+            <div id="converterTool" class="tool-container">
+                <div class="container">
+                    <h2 class="tool-title">PDF to Image Converter</h2>
+                    <p class="subtitle">PDF 파일을 JPG/PNG 이미지로 변환합니다</p>
+
+                    <!-- File Upload Area -->
+                    <div id="dropZone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <p>PDF 파일을 여기에 드래그하거나</p>
+                            <button type="button" id="selectFileBtn" class="btn btn-secondary">파일 선택</button>
+                            <input type="file" id="fileInput" accept=".pdf" hidden>
+                        </div>
+                    </div>
+
+                    <!-- File Info -->
+                    <div id="fileInfo" class="file-info hidden">
+                        <span id="fileName"></span>
+                        <span id="pageCount"></span>
+                        <button type="button" id="removeFileBtn" class="btn-icon" title="파일 제거">&times;</button>
+                    </div>
+
+                    <!-- Settings Panel -->
+                    <div id="settingsPanel" class="settings-panel hidden">
+                        <h3>변환 설정</h3>
+
+                        <div class="setting-group">
+                            <label>이미지 형식</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="format" value="jpeg" checked>
+                                    <span>JPG</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="format" value="png">
+                                    <span>PNG</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group" id="qualityGroup">
+                            <label for="qualitySlider">
+                                이미지 품질: <span id="qualityValue">0.9</span>
+                            </label>
+                            <input type="range" id="qualitySlider" min="0.1" max="1" step="0.1" value="0.9">
+                            <div class="slider-labels">
+                                <span>낮음 (0.1)</span>
+                                <span>높음 (1.0)</span>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>페이지 범위</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="pageRange" value="all" checked>
+                                    <span>전체 페이지</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="pageRange" value="custom">
+                                    <span>범위 지정</span>
+                                </label>
+                            </div>
+                            <div id="customRangeInput" class="custom-range hidden">
+                                <input type="text" id="pageRangeInput" placeholder="예: 1-5, 7, 10-12">
+                                <small>쉼표로 구분, 하이픈으로 범위 지정</small>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label for="scaleSlider">
+                                해상도 배율: <span id="scaleValue">2.0</span>x
+                            </label>
+                            <input type="range" id="scaleSlider" min="1" max="4" step="0.5" value="2">
+                            <div class="slider-labels">
+                                <span>1x (빠름)</span>
+                                <span>4x (고해상도)</span>
+                            </div>
+                        </div>
+
+                        <button type="button" id="convertBtn" class="btn btn-primary">변환하기</button>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div id="progressContainer" class="progress-container hidden">
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <span id="progressText">0%</span>
+                    </div>
+
+                    <!-- Preview Area -->
+                    <div id="previewArea" class="preview-area hidden">
+                        <h3>미리보기</h3>
+                        <div class="preview-grid">
+                            <div class="preview-item">
+                                <h4>첫 페이지</h4>
+                                <div class="preview-image-container">
+                                    <img id="firstPagePreview" alt="첫 페이지 미리보기">
+                                </div>
+                            </div>
+                            <div class="preview-item">
+                                <h4>마지막 페이지</h4>
+                                <div class="preview-image-container">
+                                    <img id="lastPagePreview" alt="마지막 페이지 미리보기">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download Section -->
+                    <div id="downloadSection" class="download-section hidden">
+                        <h3>다운로드</h3>
+                        <div class="download-buttons">
+                            <button type="button" id="downloadZipBtn" class="btn btn-primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                ZIP으로 다운로드
+                            </button>
+                            <button type="button" id="downloadIndividualBtn" class="btn btn-secondary">
+                                개별 다운로드
+                            </button>
+                        </div>
+
+                        <!-- Individual Download Links -->
+                        <div id="individualLinks" class="individual-links hidden">
+                            <h4>페이지별 다운로드</h4>
+                            <div id="linksList" class="links-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PDF Compressor Tool -->
+            <div id="compressorTool" class="tool-container hidden">
+                <div class="container">
+                    <h2 class="tool-title">PDF 압축</h2>
+                    <p class="subtitle">PDF 파일 크기를 줄입니다</p>
+
+                    <!-- Warning Message -->
+                    <div class="warning-message">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <span>압축된 PDF는 이미지 기반으로 변환되어 텍스트 선택이 불가능합니다</span>
+                    </div>
+
+                    <!-- File Upload Area -->
+                    <div id="compressDropZone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <p>PDF 파일을 여기에 드래그하거나</p>
+                            <button type="button" id="compressSelectFileBtn" class="btn btn-secondary">파일 선택</button>
+                            <input type="file" id="compressFileInput" accept=".pdf" hidden>
+                        </div>
+                    </div>
+
+                    <!-- File Info -->
+                    <div id="compressFileInfo" class="file-info hidden">
+                        <div class="file-details">
+                            <span id="compressFileName"></span>
+                            <span id="compressFileSize"></span>
+                            <span id="compressPageCount"></span>
+                        </div>
+                        <button type="button" id="compressRemoveFileBtn" class="btn-icon" title="파일 제거">&times;</button>
+                    </div>
+
+                    <!-- Compression Settings -->
+                    <div id="compressSettingsPanel" class="settings-panel hidden">
+                        <h3>압축 설정</h3>
+
+                        <div class="setting-group">
+                            <label for="compressScaleSlider">
+                                해상도 배율: <span id="compressScaleValue">1.5</span>x
+                            </label>
+                            <input type="range" id="compressScaleSlider" min="0.5" max="3" step="0.25" value="1.5">
+                            <div class="slider-labels">
+                                <span>0.5x (작은 파일)</span>
+                                <span>3x (고품질)</span>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>이미지 품질</label>
+                            <div class="radio-group compression-levels">
+                                <label class="radio-label">
+                                    <input type="radio" name="compressionLevel" value="0.9">
+                                    <span>최소</span>
+                                    <small>품질 90%</small>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="compressionLevel" value="0.7">
+                                    <span>낮음</span>
+                                    <small>품질 70%</small>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="compressionLevel" value="0.5" checked>
+                                    <span>중간</span>
+                                    <small>품질 50%</small>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="compressionLevel" value="0.3">
+                                    <span>높음</span>
+                                    <small>품질 30%</small>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="compressionLevel" value="0.1">
+                                    <span>최대</span>
+                                    <small>품질 10%</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="compress-tip">
+                            <strong>팁:</strong> 해상도 ↓ + 품질 ↓ = 최대 압축 | 해상도 ↑ + 품질 ↑ = 고품질
+                        </div>
+
+                        <button type="button" id="compressBtn" class="btn btn-primary">압축하기</button>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div id="compressProgressContainer" class="progress-container hidden">
+                        <div class="progress-bar">
+                            <div id="compressProgressFill" class="progress-fill"></div>
+                        </div>
+                        <span id="compressProgressText">0%</span>
+                    </div>
+
+                    <!-- Result Section -->
+                    <div id="compressResultSection" class="result-section hidden">
+                        <h3>압축 완료</h3>
+                        <div class="compression-result">
+                            <div class="result-item">
+                                <span class="result-label">원본 크기</span>
+                                <span id="originalSize" class="result-value"></span>
+                            </div>
+                            <div class="result-arrow">→</div>
+                            <div class="result-item">
+                                <span class="result-label">압축 후 크기</span>
+                                <span id="compressedSize" class="result-value"></span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">절감률</span>
+                                <span id="savingsPercent" class="result-value savings"></span>
+                            </div>
+                        </div>
+                        <button type="button" id="downloadCompressedBtn" class="btn btn-primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            압축된 PDF 다운로드
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
