@@ -6,7 +6,8 @@
       "Bash(git push *)",
       "Bash(git config *)",
       "Bash(ssh -T git@github.com)",
-      "Read(//home/daniel_wj/.ssh/**)"
+      "Read(//home/daniel_wj/.ssh/**)",
+      "Bash(git remote *)"
     ]
   }
 }
