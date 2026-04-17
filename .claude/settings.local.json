@@ -7,7 +7,10 @@
       "Bash(git config *)",
       "Bash(ssh -T git@github.com)",
       "Read(//home/daniel_wj/.ssh/**)",
-      "Bash(git remote *)"
+      "Bash(git remote *)",
+      "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 remote set-url origin https://github.com/LDJWJ/pdf_com_jpg_2603.git)",
+      "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 config user.name \"LDJWJ\")",
+      "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 config user.email \"frontier1020@naver.com\")"
     ]
   }
 }
