@@ -10,7 +10,8 @@
       "Bash(git remote *)",
       "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 remote set-url origin https://github.com/LDJWJ/pdf_com_jpg_2603.git)",
       "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 config user.name \"LDJWJ\")",
-      "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 config user.email \"frontier1020@naver.com\")"
+      "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 config user.email \"frontier1020@naver.com\")",
+      "Bash(git -C /mnt/d/github_frontierall/multiImgGen-V2-2604 config --list)"
     ]
   }
 }
