@@ -46,6 +46,10 @@
                     <span class="nav-icon">📷</span>
                     <span class="nav-text">이미지 변환</span>
                 </button>
+                <button class="nav-item" data-tool="imageCompressor">
+                    <span class="nav-icon">🗜️</span>
+                    <span class="nav-text">이미지 압축</span>
+                </button>
                 <button class="nav-item" data-tool="compressor">
                     <span class="nav-icon">📦</span>
                     <span class="nav-text">PDF 압축</span>
@@ -208,6 +212,162 @@
                         <div id="individualLinks" class="individual-links hidden">
                             <h4>페이지별 다운로드</h4>
                             <div id="linksList" class="links-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Image Compressor Tool ===== -->
+            <div id="imageCompressorTool" class="tool-container hidden">
+                <div class="container">
+                    <h2 class="tool-title">이미지 압축</h2>
+                    <p class="subtitle">JPG/PNG/WEBP 이미지의 크기를 줄입니다</p>
+
+                    <div id="imgCompressDropZone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <p>이미지 파일을 여기에 드래그하거나</p>
+                            <button type="button" id="imgCompressSelectBtn" class="btn btn-secondary">파일 선택</button>
+                            <input type="file" id="imgCompressFileInput" accept="image/jpeg,image/png,image/webp" multiple hidden>
+                            <small style="color:#999;">여러 파일을 한 번에 선택할 수 있습니다 (JPG/PNG/WEBP)</small>
+                        </div>
+                    </div>
+
+                    <div id="imgCompressFileListSection" class="hidden">
+                        <div class="merge-list-header">
+                            <h3>파일 목록 (<span id="imgCompressFileCount">0</span>개)</h3>
+                            <button type="button" id="imgCompressAddMoreBtn" class="btn btn-secondary btn-sm">+ 파일 추가</button>
+                            <input type="file" id="imgCompressAddMoreInput" accept="image/jpeg,image/png,image/webp" multiple hidden>
+                        </div>
+                        <div id="imgCompressFileList" class="merge-file-list"></div>
+                    </div>
+
+                    <div id="imgCompressSettingsPanel" class="settings-panel hidden">
+                        <h3>압축 설정</h3>
+
+                        <div class="setting-group">
+                            <label>이미지 품질</label>
+                            <div class="radio-group compression-levels">
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressQuality" value="0.9">
+                                    <span>최소</span>
+                                    <small>품질 90%</small>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressQuality" value="0.75">
+                                    <span>낮음</span>
+                                    <small>품질 75%</small>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressQuality" value="0.6" checked>
+                                    <span>중간</span>
+                                    <small>품질 60%</small>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressQuality" value="0.4">
+                                    <span>높음</span>
+                                    <small>품질 40%</small>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressQuality" value="0.2">
+                                    <span>최대</span>
+                                    <small>품질 20%</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>최대 너비</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressWidth" value="0" checked>
+                                    <span>원본 유지</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressWidth" value="1920">
+                                    <span>1920px</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressWidth" value="1280">
+                                    <span>1280px</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressWidth" value="800">
+                                    <span>800px</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressWidth" value="400">
+                                    <span>400px</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>출력 형식</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressFormat" value="auto" checked>
+                                    <span>원본 유지</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressFormat" value="image/jpeg">
+                                    <span>JPG</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="imgCompressFormat" value="image/webp">
+                                    <span>WEBP</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="compress-tip">
+                            <strong>팁:</strong> PNG는 비손실 형식이라 품질 조절 효과가 적습니다. JPG/WEBP로 변환 시 큰 효과를 볼 수 있습니다.
+                        </div>
+
+                        <button type="button" id="imgCompressBtn" class="btn btn-primary">압축하기</button>
+                    </div>
+
+                    <div id="imgCompressProgressContainer" class="progress-container hidden">
+                        <div class="progress-bar">
+                            <div id="imgCompressProgressFill" class="progress-fill"></div>
+                        </div>
+                        <span id="imgCompressProgressText">0%</span>
+                    </div>
+
+                    <div id="imgCompressResultSection" class="result-section hidden">
+                        <h3>압축 완료</h3>
+                        <div class="compression-result">
+                            <div class="result-item">
+                                <span class="result-label">원본 합계</span>
+                                <span id="imgCompressOriginalTotal" class="result-value"></span>
+                            </div>
+                            <div class="result-arrow">→</div>
+                            <div class="result-item">
+                                <span class="result-label">압축 후 합계</span>
+                                <span id="imgCompressCompressedTotal" class="result-value"></span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">절감률</span>
+                                <span id="imgCompressSavings" class="result-value savings"></span>
+                            </div>
+                        </div>
+                        <div class="download-buttons" style="margin-bottom:20px;">
+                            <button type="button" id="imgCompressDownloadZipBtn" class="btn btn-primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                ZIP으로 다운로드
+                            </button>
+                        </div>
+                        <div class="individual-links">
+                            <h4>개별 다운로드</h4>
+                            <div id="imgCompressResultList" class="links-list"></div>
                         </div>
                     </div>
                 </div>

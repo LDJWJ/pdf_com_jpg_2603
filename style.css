@@ -1338,7 +1338,47 @@ textarea[readonly] {
     }
 }
 
+/* Image Compress result list (row layout) */
+#imgCompressResultList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 360px;
+    grid-template-columns: none;
+}
+
+#imgCompressResultList .link-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+#imgCompressResultList .link-name {
+    flex: 1;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#imgCompressResultList .link-meta {
+    font-size: 0.8rem;
+    color: #667eea;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 @media (max-width: 480px) {
+    #imgCompressResultList .link-item {
+        flex-wrap: wrap;
+    }
+
     .compression-levels {
         flex-direction: column !important;
     }

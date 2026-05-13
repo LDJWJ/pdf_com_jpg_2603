@@ -16,6 +16,10 @@ let compressPdfFileName = '';
 let compressPdfOriginalSize = 0;
 let compressedPdfBlob = null;
 
+// Image Compressor
+let imgCompressFiles = []; // [{file, name}]
+let imgCompressResults = []; // [{name, blob, originalSize, compressedSize}]
+
 // PDF Merger
 let mergeFiles = []; // [{file, name, pageCount}]
 let mergedPdfBlob = null;
@@ -48,6 +52,7 @@ const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 const navItems = document.querySelectorAll('.nav-item');
 const converterTool = document.getElementById('converterTool');
+const imageCompressorTool = document.getElementById('imageCompressorTool');
 const compressorTool = document.getElementById('compressorTool');
 const mergerTool = document.getElementById('mergerTool');
 const splitterTool = document.getElementById('splitterTool');
@@ -83,6 +88,27 @@ const downloadZipBtn = document.getElementById('downloadZipBtn');
 const downloadIndividualBtn = document.getElementById('downloadIndividualBtn');
 const individualLinks = document.getElementById('individualLinks');
 const linksList = document.getElementById('linksList');
+
+// ==================== DOM 요소 - 이미지 압축 ====================
+const imgCompressDropZone = document.getElementById('imgCompressDropZone');
+const imgCompressFileInput = document.getElementById('imgCompressFileInput');
+const imgCompressSelectBtn = document.getElementById('imgCompressSelectBtn');
+const imgCompressFileListSection = document.getElementById('imgCompressFileListSection');
+const imgCompressFileCount = document.getElementById('imgCompressFileCount');
+const imgCompressAddMoreBtn = document.getElementById('imgCompressAddMoreBtn');
+const imgCompressAddMoreInput = document.getElementById('imgCompressAddMoreInput');
+const imgCompressFileList = document.getElementById('imgCompressFileList');
+const imgCompressSettingsPanel = document.getElementById('imgCompressSettingsPanel');
+const imgCompressBtn = document.getElementById('imgCompressBtn');
+const imgCompressProgressContainer = document.getElementById('imgCompressProgressContainer');
+const imgCompressProgressFill = document.getElementById('imgCompressProgressFill');
+const imgCompressProgressText = document.getElementById('imgCompressProgressText');
+const imgCompressResultSection = document.getElementById('imgCompressResultSection');
+const imgCompressOriginalTotal = document.getElementById('imgCompressOriginalTotal');
+const imgCompressCompressedTotal = document.getElementById('imgCompressCompressedTotal');
+const imgCompressSavings = document.getElementById('imgCompressSavings');
+const imgCompressDownloadZipBtn = document.getElementById('imgCompressDownloadZipBtn');
+const imgCompressResultList = document.getElementById('imgCompressResultList');
 
 // ==================== DOM 요소 - PDF 압축 ====================
 const compressDropZone = document.getElementById('compressDropZone');
@@ -226,13 +252,14 @@ function formatPdfDate(dateStr) {
 
 // ==================== 메뉴 전환 로직 ====================
 const toolMap = {
-    converter:  converterTool,
-    compressor: compressorTool,
-    merger:     mergerTool,
-    splitter:   splitterTool,
-    pageEditor: pageEditorTool,
-    metadata:   metadataTool,
-    watermark:  watermarkTool,
+    converter:       converterTool,
+    imageCompressor: imageCompressorTool,
+    compressor:      compressorTool,
+    merger:          mergerTool,
+    splitter:        splitterTool,
+    pageEditor:      pageEditorTool,
+    metadata:        metadataTool,
+    watermark:       watermarkTool,
 };
 
 function switchTool(toolName) {
@@ -313,6 +340,34 @@ function setupEventListeners() {
     convertBtn.addEventListener('click', startConversion);
     downloadZipBtn.addEventListener('click', downloadAsZip);
     downloadIndividualBtn.addEventListener('click', toggleIndividualLinks);
+
+    // ========== 이미지 압축 이벤트 ==========
+    imgCompressSelectBtn.addEventListener('click', (e) => { e.stopPropagation(); imgCompressFileInput.click(); });
+    imgCompressDropZone.addEventListener('click', () => imgCompressFileInput.click());
+    imgCompressFileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files).filter(isImageFile);
+        if (files.length > 0) addImgCompressFiles(files);
+        imgCompressFileInput.value = '';
+    });
+
+    imgCompressDropZone.addEventListener('dragover', (e) => { e.preventDefault(); imgCompressDropZone.classList.add('drag-over'); });
+    imgCompressDropZone.addEventListener('dragleave', () => imgCompressDropZone.classList.remove('drag-over'));
+    imgCompressDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        imgCompressDropZone.classList.remove('drag-over');
+        const files = Array.from(e.dataTransfer.files).filter(isImageFile);
+        if (files.length > 0) addImgCompressFiles(files);
+    });
+
+    imgCompressAddMoreBtn.addEventListener('click', () => imgCompressAddMoreInput.click());
+    imgCompressAddMoreInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files).filter(isImageFile);
+        if (files.length > 0) addImgCompressFiles(files);
+        imgCompressAddMoreInput.value = '';
+    });
+
+    imgCompressBtn.addEventListener('click', startImgCompression);
+    imgCompressDownloadZipBtn.addEventListener('click', downloadImgCompressZip);
 
     // ========== PDF 압축 이벤트 ==========
     compressSelectFileBtn.addEventListener('click', (e) => { e.stopPropagation(); compressFileInput.click(); });
@@ -1448,6 +1503,188 @@ async function applyWatermark() {
     } finally {
         applyWatermarkBtn.disabled = false;
     }
+}
+
+// ==================== 이미지 압축 기능 ====================
+function isImageFile(f) {
+    return f && /^image\/(jpeg|png|webp)$/.test(f.type);
+}
+
+function addImgCompressFiles(files) {
+    files.forEach(f => imgCompressFiles.push({ file: f, name: f.name }));
+    renderImgCompressFileList();
+    imgCompressDropZone.classList.add('hidden');
+    imgCompressFileListSection.classList.remove('hidden');
+    imgCompressSettingsPanel.classList.remove('hidden');
+    imgCompressResultSection.classList.add('hidden');
+    imgCompressResults = [];
+}
+
+function renderImgCompressFileList() {
+    imgCompressFileCount.textContent = imgCompressFiles.length;
+    imgCompressFileList.innerHTML = '';
+    imgCompressFiles.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'merge-file-item';
+        row.innerHTML = `
+            <span class="merge-file-order">${idx + 1}</span>
+            <span class="merge-file-name">${item.name}</span>
+            <span class="merge-file-pages">${formatFileSize(item.file.size)}</span>
+            <button type="button" class="btn-icon merge-file-remove" data-idx="${idx}" title="제거">&times;</button>
+        `;
+        imgCompressFileList.appendChild(row);
+    });
+    imgCompressFileList.querySelectorAll('.merge-file-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const i = parseInt(btn.dataset.idx, 10);
+            imgCompressFiles.splice(i, 1);
+            if (imgCompressFiles.length === 0) {
+                resetImgCompress();
+            } else {
+                renderImgCompressFileList();
+            }
+        });
+    });
+}
+
+function resetImgCompress() {
+    imgCompressFiles = [];
+    imgCompressResults = [];
+    imgCompressDropZone.classList.remove('hidden');
+    imgCompressFileListSection.classList.add('hidden');
+    imgCompressSettingsPanel.classList.add('hidden');
+    imgCompressResultSection.classList.add('hidden');
+    imgCompressProgressContainer.classList.add('hidden');
+}
+
+function loadImageFromFile(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+        img.src = url;
+    });
+}
+
+function canvasToBlob(canvas, type, quality) {
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => resolve(blob), type, quality);
+    });
+}
+
+function resolveOutputType(originalType, formatSetting) {
+    if (formatSetting !== 'auto') return formatSetting;
+    return originalType === 'image/png' ? 'image/png' : originalType;
+}
+
+function buildOutputName(originalName, outputType) {
+    const dot = originalName.lastIndexOf('.');
+    const base = dot >= 0 ? originalName.slice(0, dot) : originalName;
+    const ext = outputType === 'image/jpeg' ? 'jpg'
+              : outputType === 'image/webp' ? 'webp'
+              : 'png';
+    return `${base}_compressed.${ext}`;
+}
+
+async function startImgCompression() {
+    if (imgCompressFiles.length === 0) return;
+
+    const quality = parseFloat(document.querySelector('input[name="imgCompressQuality"]:checked').value);
+    const maxWidth = parseInt(document.querySelector('input[name="imgCompressWidth"]:checked').value, 10);
+    const formatSetting = document.querySelector('input[name="imgCompressFormat"]:checked').value;
+
+    imgCompressBtn.disabled = true;
+    imgCompressProgressContainer.classList.remove('hidden');
+    imgCompressResultSection.classList.add('hidden');
+    imgCompressResults = [];
+
+    try {
+        for (let i = 0; i < imgCompressFiles.length; i++) {
+            const { file, name } = imgCompressFiles[i];
+            const img = await loadImageFromFile(file);
+
+            let targetW = img.naturalWidth;
+            let targetH = img.naturalHeight;
+            if (maxWidth > 0 && targetW > maxWidth) {
+                const ratio = maxWidth / targetW;
+                targetW = maxWidth;
+                targetH = Math.round(img.naturalHeight * ratio);
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetW;
+            canvas.height = targetH;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, targetW, targetH);
+
+            const outputType = resolveOutputType(file.type, formatSetting);
+            const blob = await canvasToBlob(canvas, outputType, quality);
+
+            imgCompressResults.push({
+                name: buildOutputName(name, outputType),
+                blob,
+                originalSize: file.size,
+                compressedSize: blob ? blob.size : 0,
+            });
+
+            const pct = Math.round(((i + 1) / imgCompressFiles.length) * 100);
+            imgCompressProgressFill.style.width = pct + '%';
+            imgCompressProgressText.textContent = pct + '%';
+        }
+
+        renderImgCompressResults();
+    } catch (error) {
+        console.error('이미지 압축 실패:', error);
+        alert('이미지 압축 중 오류가 발생했습니다.');
+    } finally {
+        imgCompressBtn.disabled = false;
+    }
+}
+
+function renderImgCompressResults() {
+    const totalOriginal = imgCompressResults.reduce((s, r) => s + r.originalSize, 0);
+    const totalCompressed = imgCompressResults.reduce((s, r) => s + r.compressedSize, 0);
+    const savings = totalOriginal > 0
+        ? Math.round((1 - totalCompressed / totalOriginal) * 100)
+        : 0;
+
+    imgCompressOriginalTotal.textContent = formatFileSize(totalOriginal);
+    imgCompressCompressedTotal.textContent = formatFileSize(totalCompressed);
+    imgCompressSavings.textContent = savings + '%';
+
+    imgCompressResultList.innerHTML = '';
+    imgCompressResults.forEach((r, idx) => {
+        const row = document.createElement('div');
+        row.className = 'link-item';
+        const diff = r.originalSize > 0
+            ? Math.round((1 - r.compressedSize / r.originalSize) * 100)
+            : 0;
+        row.innerHTML = `
+            <span class="link-name">${r.name}</span>
+            <span class="link-meta">${formatFileSize(r.originalSize)} → ${formatFileSize(r.compressedSize)} (${diff}%↓)</span>
+            <button type="button" class="btn btn-secondary btn-sm" data-idx="${idx}">다운로드</button>
+        `;
+        imgCompressResultList.appendChild(row);
+    });
+    imgCompressResultList.querySelectorAll('button[data-idx]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const r = imgCompressResults[parseInt(btn.dataset.idx, 10)];
+            if (r && r.blob) saveAs(r.blob, r.name);
+        });
+    });
+
+    imgCompressResultSection.classList.remove('hidden');
+}
+
+async function downloadImgCompressZip() {
+    if (imgCompressResults.length === 0) return;
+    const zip = new JSZip();
+    imgCompressResults.forEach(r => {
+        if (r.blob) zip.file(r.name, r.blob);
+    });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    saveAs(blob, 'compressed_images.zip');
 }
 
 // ==================== 초기화 ====================
