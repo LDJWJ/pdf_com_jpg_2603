@@ -16,7 +16,9 @@
       "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 status)",
       "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 add index.html)",
       "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 commit -m \"Move visitor counter badge to sidebar bottom\")",
-      "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 commit -m \"Replace visitor badge with visitorbadge.io\")"
+      "Bash(git -C /mnt/d/github/pdf_com_jpg_2603 commit -m \"Replace visitor badge with visitorbadge.io\")",
+      "Bash(node --check /mnt/d/Github/pdf_com_jpg_2603/script.js)",
+      "Bash(git *)"
     ]
   }
 }
