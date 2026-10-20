@@ -114,6 +114,14 @@
                         <button type="button" id="removeFileBtn" class="btn-icon" title="파일 제거">&times;</button>
                     </div>
 
+                    <div id="integrityCheck" class="integrity-check hidden">
+                        <div id="integrityStatus" class="integrity-status"></div>
+                        <div id="integrityProgress" class="progress-bar hidden">
+                            <div id="integrityProgressFill" class="progress-fill"></div>
+                        </div>
+                        <div id="integrityList" class="integrity-list"></div>
+                    </div>
+
                     <div id="settingsPanel" class="settings-panel hidden">
                         <h3>변환 설정</h3>
 
@@ -1036,6 +1044,7 @@
         </main>
     </div>
 
+    <script src="integrity.js"></script>
     <script src="script.js"></script>
 
 

@@ -9,6 +9,7 @@ const { jsPDF } = window.jspdf;
 let pdfDocument = null;
 let convertedImages = [];
 let pdfFileName = '';
+let integrityRunId = 0; // 새 파일을 올리거나 제거하면 진행 중인 점검을 취소
 
 // PDF Compressor
 let compressPdfDocument = null;
@@ -75,6 +76,11 @@ const fileInfo = document.getElementById('fileInfo');
 const fileName = document.getElementById('fileName');
 const pageCount = document.getElementById('pageCount');
 const removeFileBtn = document.getElementById('removeFileBtn');
+const integrityCheck = document.getElementById('integrityCheck');
+const integrityStatus = document.getElementById('integrityStatus');
+const integrityProgress = document.getElementById('integrityProgress');
+const integrityProgressFill = document.getElementById('integrityProgressFill');
+const integrityList = document.getElementById('integrityList');
 const settingsPanel = document.getElementById('settingsPanel');
 const qualitySlider = document.getElementById('qualitySlider');
 const qualityValue = document.getElementById('qualityValue');
@@ -560,6 +566,7 @@ function handleFileSelect(e) {
 async function loadPDF(file) {
     try {
         pdfFileName = file.name.replace('.pdf', '');
+        resetIntegrityCheck();
         const arrayBuffer = await file.arrayBuffer();
         pdfDocument = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
@@ -571,13 +578,75 @@ async function loadPDF(file) {
         settingsPanel.classList.remove('hidden');
 
         hideResults();
+        runIntegrityCheck(pdfDocument);
     } catch (error) {
         console.error('PDF 로드 실패:', error);
         alert('PDF 파일을 로드하는데 실패했습니다.');
     }
 }
 
+// ==================== PDF 깨진 쪽 점검 ====================
+async function runIntegrityCheck(doc) {
+    const runId = ++integrityRunId;
+    integrityCheck.className = 'integrity-check';
+    integrityList.innerHTML = '';
+    integrityStatus.textContent = '깨진 쪽이 있는지 점검 중... 0%';
+    integrityProgressFill.style.width = '0%';
+    integrityProgress.classList.remove('hidden');
+
+    const suspects = await checkBrokenPages(doc, (done, total) => {
+        if (runId !== integrityRunId) return;
+        const percent = Math.round(done / total * 100);
+        integrityProgressFill.style.width = `${percent}%`;
+        integrityStatus.textContent = `깨진 쪽이 있는지 점검 중... ${percent}%`;
+    }, () => runId !== integrityRunId);
+    if (suspects === null) return;
+
+    integrityProgress.classList.add('hidden');
+    const note = document.createElement('div');
+    note.className = 'integrity-note';
+    note.textContent = '이미지가 줄무늬로 깨지는 손상만 찾습니다. 오타와 그 밖의 문제는 직접 확인해야 하며, 파일은 수정하지 않고 외부로 전송하지 않습니다.';
+
+    if (suspects.length === 0) {
+        integrityCheck.classList.add('ok');
+        integrityStatus.textContent = `깨진 쪽 없음 (${doc.numPages}쪽 점검)`;
+    } else {
+        integrityCheck.classList.add('warn');
+        integrityStatus.textContent = `깨진 것으로 의심되는 쪽: ${suspects.map(s => s.page).join(', ')} (총 ${doc.numPages}쪽 중 ${suspects.length}쪽)`;
+        for (const s of suspects) {
+            const item = document.createElement('div');
+            item.className = 'integrity-item';
+            item.textContent = s.error ? `${s.page}쪽 (렌더링 실패)` : `${s.page}쪽`;
+            if (!s.error) item.prepend(await renderIntegrityThumb(doc, s.page));
+            if (runId !== integrityRunId) return;
+            integrityList.appendChild(item);
+        }
+    }
+    integrityCheck.appendChild(note);
+}
+
+async function renderIntegrityThumb(doc, pageNum) {
+    const page = await doc.getPage(pageNum);
+    const viewport = page.getViewport({ scale: 0.4 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    const img = document.createElement('img');
+    img.src = canvas.toDataURL('image/jpeg', 0.7);
+    img.alt = `${pageNum}쪽 미리보기`;
+    return img;
+}
+
+function resetIntegrityCheck() {
+    integrityRunId++;
+    integrityCheck.className = 'integrity-check hidden';
+    integrityList.innerHTML = '';
+    integrityCheck.querySelectorAll('.integrity-note').forEach(n => n.remove());
+}
+
 function resetAll() {
+    resetIntegrityCheck();
     pdfDocument = null;
     convertedImages = [];
     pdfFileName = '';
